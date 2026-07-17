@@ -1,0 +1,121 @@
+﻿@model MasoksTech.Web.Data.ApplicationDbContext
+@{
+    ViewData["Title"] = "Panel Principal - MASOKS TECH";
+
+    // Cálculos en caliente directamente de la base de datos real
+    var totalVentas = Model.Ventas.Any() ? Model.Ventas.Sum(v => v.Total) : 0m;
+    var totalUsuarios = Model.Usuarios.Count();
+    var stockTotal = Model.Productos.Any() ? Model.Productos.Sum(p => p.Stock) : 0;
+    var ultimasVentas = Model.Ventas.OrderByDescending(v => v.Fecha).Take(5).ToList();
+}
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-3 bg-dark text-white p-4 rounded-3 min-vh-100">
+            <h3 class="text-center mb-4 font-weight-bold">MASOKS TECH</h3>
+            <p class="text-muted text-center small">Portal de Administración</p>
+            <hr class="bg-secondary" />
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white active fw-bold" href="@Url.Action("Index", "Dashboard")"><i class="bi bi-speedometer2"></i> Panel Principal</a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white-50" href="@Url.Action("Index", "Inventario")"><i class="bi bi-box-seam"></i> Inventario</a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white-50" href="@Url.Action("Index", "Usuarios")"><i class="bi bi-people"></i> Usuarios</a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-white-50" href="@Url.Action("Login", "Account")"><i class="bi bi-box-arrow-left"></i> Salir</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="col-md-9 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-dark">Resumen del Sistema</h2>
+                <span class="badge bg-success py-2 px-3">Sesión Activa: Admin</span>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white border-0 shadow-sm p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-white-50 small text-uppercase">Ventas Totales</h6>
+                                <h2 class="fw-bold m-0">S/ @totalVentas.ToString("N2")</h2>
+                            </div>
+                            <i class="bi bi-currency-dollar fs-1 text-white-50"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card bg-success text-white border-0 shadow-sm p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-white-50 small text-uppercase">Usuarios Registrados</h6>
+                                <h2 class="fw-bold m-0">@totalUsuarios</h2>
+                            </div>
+                            <i class="bi bi-people fs-1 text-white-50"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card bg-warning text-dark border-0 shadow-sm p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-dark-50 small text-uppercase">Stock Total (Accesorios)</h6>
+                                <h2 class="fw-bold m-0">@stockTotal unids.</h2>
+                            </div>
+                            <i class="bi bi-box-seam fs-1 text-dark-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4">
+                <h4 class="mb-3 text-dark fw-bold"><i class="bi bi-clock-history me-2"></i>Últimas Ventas Realizadas</h4>
+
+                @if (!ultimasVentas.Any())
+                {
+                    <div class="alert alert-light text-center py-4 border">
+                        <i class="bi bi-info-circle text-muted fs-3 d-block mb-2"></i>
+                        <span class="text-muted">Aún no se han registrado transacciones en la base de datos.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Cliente (Correo)</th>
+                                    <th>Producto Adquirido</th>
+                                    <th>Monto</th>
+                                    <th>Fecha y Hora</th>
+                                    <th class="text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var venta in ultimasVentas)
+                                {
+                                    <tr>
+                                        <td><strong>@venta.ClienteCorreo</strong></td>
+                                        <td>@venta.ProductoNombre</td>
+                                        <td class="text-success fw-bold">S/ @venta.Total.ToString("F2")</td>
+                                        <td>@venta.Fecha.ToString("dd/MM/yyyy hh:mm tt")</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success">@venta.Estado</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

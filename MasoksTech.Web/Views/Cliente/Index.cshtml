@@ -1,0 +1,140 @@
+﻿@model List<MasoksTech.Web.Models.InventarioItem>
+@{
+    ViewData["Title"] = "Catálogo Gamer";
+}
+
+<!-- Navegación -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4 py-3 shadow">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold text-info" href="#">👾 MASOKS TECH - Catálogo Gamer</a>
+        <div class="d-flex align-items-center">
+            <span class="text-white-50 me-3">Sesión: cliente.activo@masokstech.com</span>
+            <a href="@Url.Action("Login", "Account")" class="btn btn-outline-danger btn-sm">Cerrar Sesión</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="bg-light p-4 rounded-3 shadow-sm mb-4">
+        <h1 class="display-6 fw-bold text-dark text-center text-md-start">🕹️ Equipamiento Profesional</h1>
+        <p class="lead text-muted text-center text-md-start">Adquiere tus accesorios con nuestra pasarela de pago segura y encriptada.</p>
+    </div>
+
+    <!-- Alertas de Transacción -->
+    @if (TempData["CompraStatus"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show text-center fw-bold shadow-sm" role="alert">
+            @TempData["CompraStatus"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["CompraStatusError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show text-center fw-bold shadow-sm" role="alert">
+            @TempData["CompraStatusError"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Catálogo de Accesorios -->
+    <h3 class="mb-4 text-secondary">Accesorios Disponibles</h3>
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+        @foreach (var prod in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 overflow-hidden">
+                    <!-- Cabecera de Tarjeta Gamer -->
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <span class="badge bg-info">@prod.Categoria</span>
+                        <span class="small text-white-50">Cod: #@prod.Id</span>
+                    </div>
+
+                    <!-- 🌟 NUEVO: Imagen de referencia del producto con ajuste profesional -->
+                    <div style="height: 200px; background-color: #f1f5f9; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                        <img src="@prod.ImagenUrl" class="w-100 h-100" style="object-fit: cover;" alt="@prod.Nombre" onerror="this.src='https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80';" />
+                    </div>
+
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold text-primary">@prod.Nombre</h5>
+                        <p class="card-text text-muted small">Accesorio gamer de alta fidelidad certificado por Masoks Tech para máximo rendimiento competitivo.</p>
+
+                        <div class="d-flex justify-content-between align-items-center my-3">
+                            <span class="fs-4 fw-bold text-success">S/ @prod.Precio.ToString("F2")</span>
+                            <span class="badge @(prod.Stock > 3 ? "bg-success" : "bg-warning text-dark")">
+                                Stock: @prod.Stock unids.
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-0 pb-3">
+                        @if (prod.Stock > 0)
+                        {
+                            <!-- Abre el modal de pago correspondiente a este producto -->
+                            <button type="button" class="btn btn-primary w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalPago-@prod.Id">
+                                🛒 Adquirir Ahora
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary w-100" disabled>Agotado</button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- (El Modal de Pago de abajo se queda exactamente igual, no necesitas cambiarlo) -->
+            <div class="modal fade" id="modalPago-@prod.Id" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+                        <div class="modal-header bg-dark text-white" style="border-top-left-radius: 15px; border-top-right-radius: 15px;">
+                            <h5 class="modal-title fw-bold"><i class="bi bi-shield-lock-fill text-info"></i> MASOKS SECURE PAY</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form asp-action="ProcesarPago" asp-controller="Cliente" method="post">
+                            <input type="hidden" name="productoId" value="@prod.Id" />
+                            <div class="modal-body p-4">
+                                <div class="text-center mb-3">
+                                    <span class="text-muted small">Estás comprando:</span>
+                                    <h6 class="fw-bold text-primary">@prod.Nombre</h6>
+                                    <h4 class="text-success fw-bold">S/ @prod.Precio.ToString("F2")</h4>
+                                </div>
+                                <hr />
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-secondary">Nombre en la Tarjeta</label>
+                                    <input type="text" name="nombreTarjeta" class="form-control form-control-sm" required placeholder="Ej: CARLOS MENDOZA" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-secondary">Número de Tarjeta (16 dígitos)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="bi bi-credit-card"></i></span>
+                                        <input type="text" name="numeroTarjeta" class="form-control form-control-sm" required maxlength="16" placeholder="4111222233334444" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label small fw-semibold text-secondary">Vencimiento</label>
+                                        <input type="text" name="expiracion" class="form-control form-control-sm" required placeholder="MM/YY" maxlength="5" />
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label small fw-semibold text-secondary">CVV</label>
+                                        <input type="password" name="cvv" class="form-control form-control-sm" required maxlength="3" placeholder="123" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info py-2 small text-center" style="font-size: 0.75rem;">
+                                    🔒 Conexión SSL de 256 bits protegida por MasoksTech.
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-light" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px;">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success btn-sm fw-bold">Confirmar Pago Seguro</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

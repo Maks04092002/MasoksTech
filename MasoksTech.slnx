@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Elementos de la solución/">
+    <File Path="codecoverage.runsettings" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="constitution.md" />
+    <File Path="task.md" />
+  </Folder>
+  <Project Path="MasoksTech.API/MasoksTech.API.csproj" />
+  <Project Path="MasoksTech.Specs/MasoksTech.Specs.csproj" />
+  <Project Path="MasoksTech.Web/MasoksTech.Web.csproj" />
+</Solution>
