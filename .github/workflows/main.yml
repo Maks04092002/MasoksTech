@@ -16,14 +16,22 @@ jobs:
     - name: Configurar .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '10.0.x'
 
-    - name: Compilar y Publicar Proyecto Web
+    - name: Restaurar dependencias de Web y API
       run: |
         dotnet restore MasoksTech.Web/MasoksTech.Web.csproj
+        dotnet restore MasoksTech.API/MasoksTech.API.csproj
+
+    - name: Compilar y Publicar Proyecto Web (Frontend)
+      run: |
         dotnet publish MasoksTech.Web/MasoksTech.Web.csproj -c Release -o ./publish --no-restore
 
-    - name: Subir archivos por FTP
+    - name: Compilar y Publicar API (Backend)
+      run: |
+        dotnet publish MasoksTech.API/MasoksTech.API.csproj -c Release -o ./publish/api --no-restore
+
+    - name: Subir todo por FTP a SmarterASP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
         server: win8041.site4now.net
