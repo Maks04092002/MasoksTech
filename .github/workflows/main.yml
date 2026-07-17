@@ -3,7 +3,7 @@ name: Publicar en SmarterASP
 on:
   push:
     branches:
-      - master  # ⚠️ Si tu rama principal en GitHub se llama "master", cambia "main" por "master"
+      - master
 
 jobs:
   build-and-deploy:
@@ -16,10 +16,12 @@ jobs:
     - name: Configurar .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # Cambia a '10.0.x' o la versión que use tu proyecto si es necesario
+        dotnet-version: '8.0.x'
 
-    - name: Compilar y Publicar Proyecto
-      run: dotnet publish -c Release -o ./publish
+    - name: Compilar y Publicar Proyecto Web
+      run: |
+        dotnet restore MasoksTech.Web/MasoksTech.Web.csproj
+        dotnet publish MasoksTech.Web/MasoksTech.Web.csproj -c Release -o ./publish --no-restore
 
     - name: Subir archivos por FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
