@@ -1,0 +1,31 @@
+name: Publicar en SmarterASP
+
+on:
+  push:
+    branches:
+      - master  # ⚠️ Si tu rama principal en GitHub se llama "master", cambia "main" por "master"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Descargar codigo
+      uses: actions/checkout@v4
+
+    - name: Configurar .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x' # Cambia a '10.0.x' o la versión que use tu proyecto si es necesario
+
+    - name: Compilar y Publicar Proyecto
+      run: dotnet publish -c Release -o ./publish
+
+    - name: Subir archivos por FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: win8041.site4now.net
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./publish/
+        server-dir: /site1/
