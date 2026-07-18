@@ -6,30 +6,37 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Registrar el AppDbContext utilizando la base de datos In-Memory
+// ========================================
+// Configuración de PostgreSQL
+// ========================================
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseInMemoryDatabase("MasoksTechInMemoryDb"));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Servicios
 builder.Services.AddControllers();
 
-// Configuración básica de Endpoints
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<IAccesoriosService, AccesoriosService>();
 
+// Inyección de dependencias
+builder.Services.AddScoped<IAccesoriosService, AccesoriosService>();
 
 var app = builder.Build();
 
-// 2. Pre-cargar (Seed) datos iniciales
+// ========================================
+// Seed de datos iniciales
+// ========================================
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    // Solo agregamos si la BD está vacía
     if (!context.Categorias.Any())
     {
         context.Categorias.Add(new Categoria { Id = 1, Nombre = "Cargadores" });
         context.Categorias.Add(new Categoria { Id = 2, Nombre = "Protección" });
+
         context.Marcas.Add(new Marca { Id = 1, Nombre = "Apple" });
         context.Marcas.Add(new Marca { Id = 2, Nombre = "Samsung" });
 
@@ -48,18 +55,22 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Configurar Swagger para desarrollo
+// ========================================
+// Middleware
+// ========================================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
+
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
-// ... Todo tu código existente en Program.cs ...
 
 [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public partial class Program { }
