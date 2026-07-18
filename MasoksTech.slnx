@@ -7,6 +7,9 @@
     <File Path="task.md" />
   </Folder>
   <Project Path="MasoksTech.API/MasoksTech.API.csproj" />
+  <Project Path="MasoksTech.Application/MasoksTech.Application.csproj" />
+  <Project Path="MasoksTech.Domain/MasoksTech.Domain.csproj" />
+  <Project Path="MasoksTech.Infrastructure/MasoksTech.Infrastructure.csproj" />
   <Project Path="MasoksTech.Specs/MasoksTech.Specs.csproj" />
   <Project Path="MasoksTech.Web/MasoksTech.Web.csproj" />
 </Solution>

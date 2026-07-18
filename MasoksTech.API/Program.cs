@@ -1,65 +1,111 @@
-using MasoksTech.API.Data;
-using MasoksTech.API.Interfaces;
-using MasoksTech.API.Models;
-using MasoksTech.API.Services;
+using MasoksTech.Infrastructure.Data;
+using MasoksTech.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Registrar el AppDbContext utilizando la base de datos In-Memory
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseInMemoryDatabase("MasoksTechInMemoryDb"));
+// ========================================
+// Configuración de PostgreSQL
+// ========================================
+if (builder.Environment.EnvironmentName != "Testing")
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(
+            builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
+// ========================================
+// Configuración de JWT
+// ========================================
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.ASCII.GetBytes(jwtSettings["Key"] ?? "ClaveSuperSecretaParaMasoksTech1234567890!");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+});
+
+// Servicios
 builder.Services.AddControllers();
 
-// Configuración básica de Endpoints
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<IAccesoriosService, AccesoriosService>();
 
+// Aquí irán las Inyecciones de dependencias (Ej: repositorios, servicios de aplicación)
+// builder.Services.AddScoped<IProductoService, ProductoService>();
 
 var app = builder.Build();
 
-// 2. Pre-cargar (Seed) datos iniciales
+// ========================================
+// Seed de datos iniciales
+// ========================================
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    // Solo agregamos si la BD está vacía
+    // Seed de Rol si no existe
+    if (!context.Roles.Any())
+    {
+        var rolAdmin = new Rol { Nombre = "Administrador" };
+        var rolCliente = new Rol { Nombre = "Cliente" };
+        context.Roles.AddRange(rolAdmin, rolCliente);
+        context.SaveChanges();
+    }
+
     if (!context.Categorias.Any())
     {
-        context.Categorias.Add(new Categoria { Id = 1, Nombre = "Cargadores" });
-        context.Categorias.Add(new Categoria { Id = 2, Nombre = "Protección" });
-        context.Marcas.Add(new Marca { Id = 1, Nombre = "Apple" });
-        context.Marcas.Add(new Marca { Id = 2, Nombre = "Samsung" });
+        context.Categorias.Add(new Categoria { Nombre = "Cargadores" });
+        context.Categorias.Add(new Categoria { Nombre = "Protección" });
 
-        context.Accesorios.Add(new Accesorio
+        context.Marcas.Add(new Marca { Nombre = "Apple" });
+        context.Marcas.Add(new Marca { Nombre = "Samsung" });
+
+        context.Productos.Add(new Producto
         {
-            Id = 1,
             Nombre = "Funda Antigolpes Samsung S23",
             MarcaId = 2,
             CategoriaId = 2,
-            Precio = 35.00m,
-            Stock = 15,
-            StockMinimo = 5
+            Precio = 35.00m
         });
 
         context.SaveChanges();
     }
 }
 
-// Configurar Swagger para desarrollo
+// ========================================
+// Middleware
+// ========================================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
-// ... Todo tu código existente en Program.cs ...
 
 [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public partial class Program { }

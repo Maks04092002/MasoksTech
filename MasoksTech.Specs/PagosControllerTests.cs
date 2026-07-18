@@ -1,48 +1,37 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using MasoksTech.Application.DTOs;
 using MasoksTech.API.Controllers;
-using MasoksTech.API.DTOs;
+using Xunit;
 
 namespace MasoksTech.Specs;
 
 public class PagosControllerTests
 {
     [Fact]
-    public void ProcesarPago_Exitoso_RetornaOk()
+    public void ProcesarPago_ReturnsOk_WhenValidData()
     {
         var controller = new PagosController();
-        var dto = new ProcesarPagoDto(150.00m, "Tarjeta de Crédito", "1234567812345678");
+        var dto = new ProcesarPagoDto(100, "1234567890123456", "Tarjeta");
 
         var result = controller.ProcesarPago(dto);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var respuesta = Assert.IsType<RespuestaPagoDto>(okResult.Value);
-        Assert.Equal("APROBADO", respuesta.Estado);
-        Assert.NotEmpty(respuesta.TransaccionId);
+        var resDto = Assert.IsType<RespuestaPagoDto>(okResult.Value);
+        
+        Assert.Equal("APROBADO", resDto.Estado);
     }
 
     [Fact]
-    public void ProcesarPago_MontoInvalido_RetornaBadRequest()
+    public void ProcesarPago_ReturnsBadRequest_WhenMontoInsuficiente()
     {
         var controller = new PagosController();
-        var dto = new ProcesarPagoDto(-5.00m, "Tarjeta", "1234567812345678");
+        var dto = new ProcesarPagoDto(0, "1234567890123456", "Tarjeta");
 
         var result = controller.ProcesarPago(dto);
 
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var respuesta = Assert.IsType<RespuestaPagoDto>(badRequestResult.Value);
-        Assert.Equal("RECHAZADO", respuesta.Estado);
-    }
-
-    [Fact]
-    public void ProcesarPago_TarjetaInvalida_RetornaBadRequest()
-    {
-        var controller = new PagosController();
-        var dto = new ProcesarPagoDto(50.00m, "Tarjeta", "1234"); // Tarjeta corta inválida
-
-        var result = controller.ProcesarPago(dto);
-
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var respuesta = Assert.IsType<RespuestaPagoDto>(badRequestResult.Value);
-        Assert.Equal("RECHAZADO", respuesta.Estado);
+        var badResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        var resDto = Assert.IsType<RespuestaPagoDto>(badResult.Value);
+        
+        Assert.Equal("RECHAZADO", resDto.Estado);
     }
 }

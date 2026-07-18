@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MasoksTech.Web.Data;
+using MasoksTech.Web.Models;
 using System.Linq;
 
 namespace MasoksTech.Web.Controllers
@@ -8,7 +9,6 @@ namespace MasoksTech.Web.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        // 1. Recibimos el contexto de la base de datos por inyección de dependencias
         public DashboardController(ApplicationDbContext context)
         {
             _context = context;
@@ -16,8 +16,19 @@ namespace MasoksTech.Web.Controllers
 
         public IActionResult Index()
         {
-            // 🌟 2. CRÍTICO: Pasamos '_context' a la vista para que 'Model' no sea null
-            return View(_context);
+            // Construimos un ViewModel con los datos reales de la base de datos
+            var viewModel = new DashboardViewModel
+            {
+                TotalProductos = _context.Productos.Count(),
+                TotalUsuarios = _context.Usuarios.Count(),
+                TotalVentas = _context.Ventas.Count(),
+                StockTotal = _context.Productos.Sum(p => (int?)p.Stock) ?? 0,
+                IngresosTotales = _context.Ventas.Sum(v => (decimal?)v.Total) ?? 0m,
+                ProductosConBajoStock = _context.Productos.Where(p => p.Stock <= 5).ToList(),
+                UltimasVentas = _context.Ventas.OrderByDescending(v => v.Fecha).Take(5).ToList()
+            };
+
+            return View(viewModel);
         }
     }
 }

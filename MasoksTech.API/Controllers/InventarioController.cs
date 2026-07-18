@@ -1,13 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MasoksTech.API.Data;
-using MasoksTech.API.Models;
-using MasoksTech.API.DTOs;
+using MasoksTech.Infrastructure.Data;
+using MasoksTech.Domain.Entities;
+using MasoksTech.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MasoksTech.API.Controllers;
 
 [ApiController]
 [Route("api/inventario")]
+[Authorize]
 public class InventarioController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -17,43 +19,39 @@ public class InventarioController : ControllerBase
         _context = context;
     }
 
-    // POST: api/inventario/venta
     [HttpPost("venta")]
     public async Task<ActionResult<RespuestaVentaDto>> RegistrarVenta(RegistrarVentaDto dto)
     {
-        // 1. Buscar si el accesorio existe en la base de datos
-        var accesorio = await _context.Accesorios.FindAsync(dto.AccesorioId);
-        if (accesorio == null)
+        var producto = await _context.Productos.Include(p => p.Inventario).FirstOrDefaultAsync(p => p.Id == dto.ProductoId);
+        if (producto == null)
         {
-            return NotFound(new { Mensaje = "El accesorio solicitado no existe." });
+            return NotFound(new { Mensaje = "El producto solicitado no existe." });
         }
 
-        // 2. Regla de Negocio: Impedir la venta si no hay stock suficiente
-        if (accesorio.Stock < dto.Cantidad || accesorio.Stock == 0)
+        if (producto.Inventario == null)
+        {
+            producto.Inventario = new Inventario { ProductoId = producto.Id, Stock = 0 };
+            _context.Inventarios.Add(producto.Inventario);
+        }
+
+        if (producto.Inventario.Stock < dto.Cantidad || producto.Inventario.Stock == 0)
         {
             return BadRequest(new { Mensaje = "No se permitirá vender productos sin stock disponible" });
         }
 
-        // 3. Modificar el stock físico del producto
-        accesorio.Stock -= dto.Cantidad;
+        producto.Inventario.Stock -= dto.Cantidad;
 
-        // 4. Registrar la auditoría del movimiento en el almacén
-        var movimiento = new MovimientoInventario
+        var bitacora = new Bitacora
         {
-            AccesorioId = dto.AccesorioId,
-            Cantidad = dto.Cantidad,
-            Tipo = "Salida",
-            Fecha = DateTime.UtcNow,
-            Detalle = $"Venta procesada de {dto.Cantidad} unidades."
+            Accion = $"Venta de {dto.Cantidad} unidades de {producto.Nombre}",
+            Modulo = "Inventario",
+            Fecha = DateTime.UtcNow
         };
+        _context.Bitacoras.Add(bitacora);
 
-        _context.Movimientos.Add(movimiento);
-
-        // Confirmar cambios en la base de datos SQLite / In-Memory
         await _context.SaveChangesAsync();
 
-        // 5. Regla de Negocio: Evaluar si se dispara la alerta de Stock Mínimo
-        bool dispararAlerta = accesorio.Stock <= accesorio.StockMinimo;
+        bool dispararAlerta = producto.Inventario.Stock <= producto.Inventario.StockMinimo;
         string mensajeResultado = "Venta procesada exitosamente.";
 
         if (dispararAlerta)
@@ -61,12 +59,6 @@ public class InventarioController : ControllerBase
             mensajeResultado += " ALERTA: El producto ha alcanzado o cruzado el límite de stock mínimo.";
         }
 
-        var respuesta = new RespuestaVentaDto(
-            Mensaje: mensajeResultado,
-            StockResultante: accesorio.Stock,
-            AlertaStockMinimo: dispararAlerta
-        );
-
-        return Ok(respuesta);
+        return Ok(new RespuestaVentaDto(mensajeResultado, producto.Inventario.Stock, dispararAlerta));
     }
 }

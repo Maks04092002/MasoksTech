@@ -1,12 +1,6 @@
-﻿@model MasoksTech.Web.Data.ApplicationDbContext
+﻿@model MasoksTech.Web.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Panel Principal - MASOKS TECH";
-
-    // Cálculos en caliente directamente de la base de datos real
-    var totalVentas = Model.Ventas.Any() ? Model.Ventas.Sum(v => v.Total) : 0m;
-    var totalUsuarios = Model.Usuarios.Count();
-    var stockTotal = Model.Productos.Any() ? Model.Productos.Sum(p => p.Stock) : 0;
-    var ultimasVentas = Model.Ventas.OrderByDescending(v => v.Fecha).Take(5).ToList();
 }
 
 <div class="container-fluid mt-4">
@@ -43,7 +37,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-white-50 small text-uppercase">Ventas Totales</h6>
-                                <h2 class="fw-bold m-0">S/ @totalVentas.ToString("N2")</h2>
+                                <h2 class="fw-bold m-0">S/ @Model.IngresosTotales.ToString("N2")</h2>
                             </div>
                             <i class="bi bi-currency-dollar fs-1 text-white-50"></i>
                         </div>
@@ -55,7 +49,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-white-50 small text-uppercase">Usuarios Registrados</h6>
-                                <h2 class="fw-bold m-0">@totalUsuarios</h2>
+                                <h2 class="fw-bold m-0">@Model.TotalUsuarios</h2>
                             </div>
                             <i class="bi bi-people fs-1 text-white-50"></i>
                         </div>
@@ -67,7 +61,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-dark-50 small text-uppercase">Stock Total (Accesorios)</h6>
-                                <h2 class="fw-bold m-0">@stockTotal unids.</h2>
+                                <h2 class="fw-bold m-0">@Model.StockTotal unids.</h2>
                             </div>
                             <i class="bi bi-box-seam fs-1 text-dark-50"></i>
                         </div>
@@ -78,7 +72,7 @@
             <div class="card border-0 shadow-sm p-4">
                 <h4 class="mb-3 text-dark fw-bold"><i class="bi bi-clock-history me-2"></i>Últimas Ventas Realizadas</h4>
 
-                @if (!ultimasVentas.Any())
+                @if (!Model.UltimasVentas.Any())
                 {
                     <div class="alert alert-light text-center py-4 border">
                         <i class="bi bi-info-circle text-muted fs-3 d-block mb-2"></i>
@@ -99,7 +93,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var venta in ultimasVentas)
+                                @foreach (var venta in Model.UltimasVentas)
                                 {
                                     <tr>
                                         <td><strong>@venta.ClienteCorreo</strong></td>

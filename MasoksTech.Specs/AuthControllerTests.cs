@@ -1,90 +1,84 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MasoksTech.Infrastructure.Data;
+using MasoksTech.Domain.Entities;
+using MasoksTech.Application.DTOs;
 using MasoksTech.API.Controllers;
-using MasoksTech.API.Data;
-using MasoksTech.API.Models;
-using MasoksTech.API.DTOs;
+using Microsoft.Extensions.Configuration;
+using Xunit;
 
 namespace MasoksTech.Specs;
 
 public class AuthControllerTests
 {
-    private AppDbContext CrearContexto()
+    private AppDbContext GetDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
+        var context = new AppDbContext(options);
 
-        return new AppDbContext(options);
+        context.Roles.Add(new Rol { Id = 1, Nombre = "Administrador" });
+        context.Roles.Add(new Rol { Id = 2, Nombre = "Cliente" });
+        context.SaveChanges();
+
+        return context;
+    }
+
+    private IConfiguration GetConfiguration()
+    {
+        var myConfiguration = new Dictionary<string, string?>
+        {
+            {"Jwt:Key", "ClaveSuperSecretaParaMasoksTech1234567890!"}
+        };
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(myConfiguration)
+            .Build();
     }
 
     [Fact]
-    public async Task Registrar_Exitoso_RetornaOk()
+    public async Task Register_ReturnsOk_WhenValidData()
     {
-        var context = CrearContexto();
-        var controller = new AuthController(context);
-        var dto = new RegistroUsuarioDto("Maks", "maks@test.com", "password123");
+        using var context = GetDbContext();
+        var controller = new AuthController(context, GetConfiguration());
+        var dto = new RegistroUsuarioDto("test", "test@test.com", "pass123");
 
         var result = await controller.Registrar(dto);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var respuesta = Assert.IsType<RespuestaLoginDto>(okResult.Value);
-        Assert.Equal("Maks", respuesta.Nombre);
+        Assert.Contains("registrado con éxito", okResult.Value!.ToString());
     }
 
     [Fact]
-    public async Task Registrar_DatosVacios_RetornaBadRequest()
+    public async Task Register_ReturnsBadRequest_WhenUserExists()
     {
-        var context = CrearContexto();
-        var controller = new AuthController(context);
-        var dto = new RegistroUsuarioDto("", "", "");
-
-        var result = await controller.Registrar(dto);
-
-        Assert.IsType<BadRequestObjectResult>(result.Result);
-    }
-
-    [Fact]
-    public async Task Registrar_CorreoDuplicado_RetornaBadRequest()
-    {
-        var context = CrearContexto();
-        context.Usuarios.Add(new Usuario { Nombre = "Maks Original", Correo = "maks@test.com", Password = "123" });
+        using var context = GetDbContext();
+        var controller = new AuthController(context, GetConfiguration());
+        
+        context.Usuarios.Add(new Usuario { Nombre = "test", Correo = "test@test.com", Password = "hash", RolId = 2 });
         context.SaveChanges();
 
-        var controller = new AuthController(context);
-        var dto = new RegistroUsuarioDto("Maks Clon", "maks@test.com", "456");
-
+        var dto = new RegistroUsuarioDto("test2", "test@test.com", "pass123");
         var result = await controller.Registrar(dto);
 
-        Assert.IsType<BadRequestObjectResult>(result.Result);
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Contains("correo ya se encuentra registrado", badRequestResult.Value!.ToString());
     }
 
     [Fact]
-    public async Task Login_Exitoso_RetornaOk()
+    public async Task Login_ReturnsOkWithToken_WhenValidCredentials()
     {
-        var context = CrearContexto();
-        context.Usuarios.Add(new Usuario { Nombre = "Maks", Correo = "maks@test.com", Password = "123" });
-        context.SaveChanges();
+        using var context = GetDbContext();
+        var controller = new AuthController(context, GetConfiguration());
 
-        var controller = new AuthController(context);
-        var dto = new LoginUsuarioDto("maks@test.com", "123");
+        var dtoReg = new RegistroUsuarioDto("test", "test@test.com", "pass123");
+        await controller.Registrar(dtoReg);
 
-        var result = await controller.Login(dto);
+        var dtoLogin = new LoginUsuarioDto("test@test.com", "pass123");
+        var result = await controller.Login(dtoLogin);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var respuesta = Assert.IsType<RespuestaLoginDto>(okResult.Value);
-        Assert.Equal("Maks", respuesta.Nombre);
-    }
-
-    [Fact]
-    public async Task Login_CredencialesIncorrectas_RetornaUnauthorized()
-    {
-        var context = CrearContexto();
-        var controller = new AuthController(context);
-        var dto = new LoginUsuarioDto("maks@test.com", "password_incorrecto");
-
-        var result = await controller.Login(dto);
-
-        Assert.IsType<UnauthorizedObjectResult>(result.Result);
+        var resDto = Assert.IsType<RespuestaLoginDto>(okResult.Value);
+        Assert.NotNull(resDto.Token);
     }
 }

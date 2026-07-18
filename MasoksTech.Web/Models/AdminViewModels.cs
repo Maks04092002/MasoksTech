@@ -1,4 +1,4 @@
-﻿namespace MasoksTech.Web.Models;
+namespace MasoksTech.Web.Models;
 
 public class InventarioItem
 {
@@ -33,7 +33,6 @@ public static class MockRepository
 {
     public static List<InventarioItem> Productos { get; set; } = new()
     {
-        // 🌟 NUEVO: Hemos agregado imágenes espectaculares para tus 3 productos iniciales
         new() {
             Id = 1,
             Nombre = "Teclado Mecánico Masoks G1",
@@ -70,4 +69,16 @@ public static class MockRepository
     {
         new() { Id = 1, ClienteCorreo = "cliente.demo@gmail.com", ProductoNombre = "Teclado Mecánico Masoks G1", Total = 320.00m, Fecha = DateTime.Now.AddMinutes(-45) }
     };
+}
+
+// ViewModel para el Dashboard — evita pasar el DbContext directamente a la vista
+public class DashboardViewModel
+{
+    public int TotalProductos { get; set; }
+    public int TotalUsuarios { get; set; }
+    public int TotalVentas { get; set; }
+    public int StockTotal { get; set; }
+    public decimal IngresosTotales { get; set; }
+    public List<InventarioItem> ProductosConBajoStock { get; set; } = new();
+    public List<VentaItem> UltimasVentas { get; set; } = new();
 }
