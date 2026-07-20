@@ -1,0 +1,10 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet restore "MasoksTech.Web/MasoksTech.Web.csproj"
+RUN dotnet publish "MasoksTech.Web/MasoksTech.Web.csproj" -c Release -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /app .
+ENTRYPOINT ["dotnet", "MasoksTech.Web.dll"]
