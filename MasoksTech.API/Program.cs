@@ -32,6 +32,9 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+    // ESTA LÍNEA CREA LAS TABLAS AUTOMÁTICAMENTE EN RAILWAY
+    context.Database.EnsureCreated();
+
     if (!context.Categorias.Any())
     {
         context.Categorias.Add(new Categoria { Id = 1, Nombre = "Cargadores" });
