@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: masokstech-api
+    env: docker
+    region: ohio
+    plan: free
+    branch: main
+    envVars:
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: masokstech-db
+          property: connectionString
+      - key: Jwt__Key
+        value: "ClaveSuperSecretaParaMasoksTech1234567890!"
+
+databases:
+  - name: masokstech-db
+    databaseName: masokstech
+    user: postgres
+    region: ohio
+    plan: free
